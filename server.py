@@ -8,7 +8,7 @@ class Server:
     def __init__(self):
         self.server_port = 8000
         self.server_socket = socket(AF_INET, SOCK_DGRAM)
-        self.server_socket.bind(("", self.server_port))
+        self.server_socket.bind((gethostbyname(gethostname()), self.server_port))
         self.n_trans = 0
         print(f"{self.time()}> Servidor listo.\n")
         self.users = {}
@@ -43,7 +43,7 @@ class Server:
             self.cursor = self.conn.cursor() 
             self.cursor.execute("""
                 CREATE TABLE users(
-                    user_name varchar(50) not null unique,
+                    user_name varchar(50) primary key,
                     password varchar(100) not null
                 )
             """)
@@ -141,7 +141,7 @@ class Server:
                 break
 
     def log_transfer(self, name_sender, name_recv, file_name):
-        now = f"{datetime.now().day:02d}-{datetime.now().month:02d}-{datetime.now().year} {datetime.now().hour:02d}:{datetime.now().minute:02d}:{datetime.now().second:02d}"
+        now = self.time(2)
         self.cursor.execute("""
             INSERT INTO file_transfer (name_sender, name_recv, file, datetime)
             VALUES (:name_sender, :name_recv, :file_name, :datetime)
@@ -177,8 +177,11 @@ class Server:
             elif msg[0] == "log_trans":
                 self.log_transfer(msg[1], msg[2], msg[3])
 
-    def time(self):
-        return f"{datetime.now().hour:02d}:{datetime.now().minute:02d}:{datetime.now().second:02d}"
+    def time(self, t=1):
+        if t == 1:
+            return f"{datetime.now().hour:02d}:{datetime.now().minute:02d}:{datetime.now().second:02d}"
+        elif t == 2:
+            return f"{datetime.now().day:02d}-{datetime.now().month:02d}-{datetime.now().year} {datetime.now().hour:02d}:{datetime.now().minute:02d}:{datetime.now().second:02d}"
 
     def commands(self):
         commands_dict = {
@@ -187,7 +190,7 @@ class Server:
             "/user <nick>" : "información del usuario", 
             "/trans" : "muestra todas las transferencias",
             "/help" : "lista de comandos",
-            "/exit" : "cerrar servidor",
+            "/close" : "cerrar servidor",
         }
         while True:
             hor = "\u2500"
@@ -195,17 +198,17 @@ class Server:
             if command == "/users":
                 trad = {"YES":"SI", "NO":"NO"}
                 print(f"\n{self.time()}>")
-                print("Usuario", " "*6, "Dirección", " "*8, "Conectado")
-                print(hor*45)
+                print("Usuario", " "*40, "Dirección", " "*10, "Conectado")
+                print(hor*80)
                 for name, info in self.users.items():
-                    print(f"{name:<15}{info[1]:<22}{trad[info[2]]}")
+                    print(f"{name:<48}{info[1]:<25}{trad[info[2]]}")
                 print("\n")
             elif command == "/help":
                 print(f"\n{self.time()}>")
-                print("Comando", " "*10, "Descripción")
-                print(hor*50)
+                print("Comando", " "*20, "Descripción")
+                print(hor*100)
                 for name, description in commands_dict.items():
-                    print(f"{name:20}{description}")
+                    print(f"{name:40}{description}")
                 print("\n")
             elif command == "/info":
                 info = {
@@ -226,21 +229,21 @@ class Server:
                 if user in self.users:
                     info = self.users[user]
                     print(f"\n{self.time()}>")
-                    print("Usuario", " "*6, "Contraseña", " "*6, "Dirección", " "*8, "Conectado")
-                    print(hor*65)
-                    print(f"{user:<15}{info[0]:<18}{info[1]:<22}{trad[info[2]]}")
+                    print("Usuario", " "*36, "Contraseña", " "*8, "Dirección", " "*10, "Conectado")
+                    print(hor*95)
+                    print(f"{user:<46}{info[0]:<18}{info[1]:<25}{trad[info[2]]}")
                     print("\n")
                 else:
                     print("El usuario no existe")
             elif command == "/trans":
                 print(f"\n{self.time()}>")
-                print("ID", " "*4, "Remitente", " "*6, "Destino", " "*6, "Archivo", " "*11, "Fecha")
-                print(hor*80)
+                print("ID", " "*2, "Remitente", " "*15, "Destino", " "*15, "Archivo", " "*22, "Fecha")
+                print(hor*100)
                 for tran in self.trans:
                     info = self.trans[tran]
-                    print(f"{tran:<8}{info[0]:<17}{info[1]:<15}{info[2]:<20}{info[3]}")
+                    print(f"{tran:<6}{info[0]:<26}{info[1]:<24}{info[2]:<24}{info[3]}")
                 print("\n")
-            elif command == "/exit":
+            elif command == "/close":
                 check = input(f"{self.time()}> Seguro que quieres cerrar el servidor (Y/N): ")
                 if check.upper() == "Y":
                     print(f"{self.time()}> Servidor cerrado")

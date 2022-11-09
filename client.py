@@ -109,7 +109,7 @@ class Receiver:
         self.save_file(file_name, connection_socket)
 
     def recv(self, connection_socket, user_name):
-        file_name = connection_socket.recv(4096).decode()
+        file_name = connection_socket.recv(4096).decode().split("/")[-1]
         print(f"{user_name} quiere enviar {file_name}")
         print("Desea aceptar el archivo (Y/N): ")
         check = input()
